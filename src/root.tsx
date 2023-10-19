@@ -16,7 +16,8 @@ import {
 import "./root.css";
 
 import { initializeApp } from 'firebase/app'
-import { FirebaseProvider } from 'solid-firebase'
+import { FirebaseProvider, useAuth, useFirebaseApp } from 'solid-firebase'
+import { getAuth } from "firebase/auth";
 
 const app = initializeApp({
   apiKey: "AIzaSyC-wWLRjfbyHlDvJpbHbF5x5gnU8jF38C4",
@@ -28,12 +29,20 @@ const app = initializeApp({
   measurementId: "G-Z9FWG08L99"
 })
 
+const navItems = [
+  { display: 'Home', url: '/' },
+  { display: 'Login', url: '/login' },
+]
+
 export default function Root() {
   const location = useLocation();
+
+  const state = useAuth(getAuth(app))
+
   const active = (path: string) =>
     path == location.pathname
       ? "border-sky-600"
-      : "border-transparent hover:border-sky-600";
+      : "border-transparent group-hover:border-sky-600";
   return (
     <Html lang="en">
       <Head>
@@ -45,14 +54,27 @@ export default function Root() {
         <Suspense>
           <ErrorBoundary>
             <FirebaseProvider app={app}>
-              <nav class="bg-base-200 flex justify-between items-center">
-                <div>Esitm8s</div>
+              <nav class="navbar justify-between">
+                <div>esitm8s</div>
                 <ul class="flex gap-2 items-center">
-                  <li class={`border-b-2 ${active("/")} mx-1.5 sm:mx-6`}>
-                    <A href="/">Home</A>
-                  </li>
-                  <li class={`border-b-2 ${active("/about")} mx-1.5 sm:mx-6`}>
-                    <A href="/about">About</A>
+                  {
+                    navItems.map(it =>
+                      <li>
+                        <A href={it.url} class={`btn group`}>{
+                          <div class={`border-b-2 ${active(it.url)}`}>{it.display}</div>
+                        }</A>
+                      </li>
+                    )
+                  }
+                  <li>
+                    <A href='/account' class={`btn group`}>
+                      {/* <div class={`border-b-2 ${active('account')}`}></div> */}
+                      <div class="avatar placeholder">
+                        <div class="bg-neutral-focus text-neutral-content rounded-full w-8 aspect-square">
+                          <span>{state.data?.displayName?.charAt(0)}</span>
+                        </div>
+                      </div>
+                    </A>
                   </li>
                 </ul>
               </nav>

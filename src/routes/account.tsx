@@ -1,4 +1,4 @@
-import { getAuth, updateProfile } from "firebase/auth"
+import { getAuth, signOut, updateProfile } from "firebase/auth"
 import { useAuth, useFirebaseApp } from "solid-firebase"
 import { createEffect, createRenderEffect, createSignal, onMount } from "solid-js";
 import { useNavigate } from "solid-start";
@@ -22,6 +22,10 @@ export default function Account() {
     if (state.data?.displayName) setDisplayName(state.data.displayName)
   })
 
+  function logout(){
+    signOut(getAuth(app))
+  }
+
   return <main class="flex flex-col gap-2 items-start">
     {state.data?.email}
 
@@ -30,5 +34,7 @@ export default function Account() {
     <button class="btn" onClick={() => {
       if (state.data) updateProfile(state.data, { displayName: displayName() })
     }}>update details</button>
+
+    <button class="btn" onClick={logout}>logout</button>
   </main>
 }

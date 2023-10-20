@@ -1,6 +1,7 @@
 import { getAuth, updateProfile } from "firebase/auth"
 import { useAuth, useFirebaseApp } from "solid-firebase"
 import { createEffect, createRenderEffect, createSignal, onMount } from "solid-js";
+import { useNavigate } from "solid-start";
 
 function model(el, value) {
   const [field, setField] = value();
@@ -9,12 +10,16 @@ function model(el, value) {
 }
 
 export default function Account() {
+  const navigate = useNavigate();
   const app = useFirebaseApp()
   const state = useAuth(getAuth(app))
 
   const [displayName, setDisplayName] = createSignal('')
+
   createEffect(() => {
-    if(state.data?.displayName) setDisplayName(state.data.displayName) 
+    if (state.loading) return;
+    if (!state.data?.uid) navigate('/login')
+    if (state.data?.displayName) setDisplayName(state.data.displayName)
   })
 
   return <main class="flex flex-col gap-2 items-start">
@@ -24,6 +29,6 @@ export default function Account() {
 
     <button class="btn" onClick={() => {
       if (state.data) updateProfile(state.data, { displayName: displayName() })
-    } }>update details</button>
+    }}>update details</button>
   </main>
 }

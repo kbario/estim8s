@@ -1,5 +1,5 @@
 // @refresh reload
-import { Suspense } from "solid-js";
+import { Match, Show, Suspense, Switch } from "solid-js";
 import {
   useLocation,
   A,
@@ -31,7 +31,7 @@ const app = initializeApp({
 
 const navItems = [
   { display: 'Home', url: '/' },
-  { display: 'Login', url: '/login' },
+  { display: 'estim8', url: 'https://estim8.kbar.io/', target: "_blank" },
 ]
 
 export default function Root() {
@@ -55,12 +55,12 @@ export default function Root() {
           <ErrorBoundary>
             <FirebaseProvider app={app}>
               <nav class="navbar justify-between">
-                <div>esitm8s</div>
+                <A class="btn" href="/">esitm8s</A>
                 <ul class="flex gap-2 items-center">
                   {
                     navItems.map(it =>
                       <li>
-                        <A href={it.url} class={`btn group`}>{
+                        <A href={it.url} class={`btn group`} target={it?.target}>{
                           <div class={`border-b-2 ${active(it.url)}`}>{it.display}</div>
                         }</A>
                       </li>
@@ -70,9 +70,20 @@ export default function Root() {
                     <A href='/account' class={`btn group`}>
                       {/* <div class={`border-b-2 ${active('account')}`}></div> */}
                       <div class="avatar placeholder">
-                        <div class="bg-neutral-focus text-neutral-content rounded-full w-8 aspect-square">
-                          <span>{state.data?.displayName?.charAt(0)}</span>
-                        </div>
+                        <Switch fallback={
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        }>
+                          <Match when={state.data?.uid}>
+                            <div class="bg-neutral-focus text-neutral-content rounded-full w-8 aspect-square">
+                              <span>{state.data?.displayName?.charAt(0)}</span>
+                            </div>
+                          </Match>
+                          <Match when={state.loading}>
+                            <div class="radial-progress text-primary" style="--value:70;">70%</div>
+                          </Match>
+                        </Switch>
                       </div>
                     </A>
                   </li>

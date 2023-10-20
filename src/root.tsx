@@ -81,7 +81,7 @@ export default function Root() {
                             </div>
                           </Match>
                           <Match when={state.loading}>
-                            <div class="radial-progress text-primary" style="--value:70;">70%</div>
+                            <span class="loading loading-spinner loading-md"></span>
                           </Match>
                         </Switch>
                       </div>

@@ -54,18 +54,17 @@ export default function Root() {
         <Suspense>
           <ErrorBoundary>
             <FirebaseProvider app={app}>
-              <nav class="navbar justify-between">
+              <nav class="navbar justify-between px-4">
                 <A class="btn" href="/">esitm8s</A>
                 <ul class="flex gap-2 items-center">
-                  {
-                    navItems.map(it =>
-                      <li>
-                        <A href={it.url} class={`btn group`} target={it?.target}>{
-                          <div class={`border-b-2 ${active(it.url)}`}>{it.display}</div>
-                        }</A>
-                      </li>
-                    )
-                  }
+                  <li>
+                    <A href="https://estim8.kbar.io/" class="btn group" target="_blank">
+                      Esimt8
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                      </svg>
+                    </A>
+                  </li>
                   <li>
                     <A href='/account' class={`btn group`}>
                       <div class="avatar placeholder">
@@ -88,15 +87,17 @@ export default function Root() {
                   </li>
                 </ul>
               </nav>
-              <Routes>
-                <FileRoutes />
-              </Routes>
-              <Toast />
+              <main class="flex flex-col gap-4 p-4 h-[calc(100svh-64px)]">
+                <Routes>
+                  <FileRoutes />
+                </Routes>
+                <Toast />
+              </main>
             </FirebaseProvider>
           </ErrorBoundary>
         </Suspense>
         <Scripts />
       </Body>
-    </Html>
+    </Html >
   );
 }

@@ -24,7 +24,7 @@ export default function Login() {
       sendSignInLinkToEmail(getAuth(app), email(), actionCodeSettings)
         .then(() => {
           window.localStorage.setItem(EMAIL_FOR_LOGIN, email())
-          pushToast({ type: 'success', message: 'Login email sent successfully. Check your spam.)' })
+          pushToast({ type: 'success', message: 'Login email sent successfully. Check your spam :)' })
         })
         .catch((err) => {
           pushToast({ type: 'error', message: err })

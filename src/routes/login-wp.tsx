@@ -3,6 +3,7 @@ import { useAuth, useFirebaseApp } from 'solid-firebase';
 import { createEffect, createSignal } from 'solid-js';
 import { useNavigate } from 'solid-start';
 import { Input, SigInput } from "~/components/input";
+import { pushToast } from '~/components/toast';
 import { validateEmail } from '~/utils/emailValidation';
 
 export default function Login() {
@@ -13,18 +14,21 @@ export default function Login() {
   const [email, setEmail] = createSignal('')
   const [password, setPassword] = createSignal('')
 
-  const [isSignIn, setIsSignIn] = createSignal<'sign-in'|'sign-up'>('sign-in')
+  const [isSignIn, setIsSignIn] = createSignal<'sign-in' | 'sign-up'>('sign-in')
 
-  createEffect(function routeGuard(){
-    if (user.loading) return 
+  createEffect(function routeGuard() {
+    if (user.loading) return
     if (user.data?.uid) navigate('/')
   })
 
   const signIn = () => {
     if (validateEmail(email())) {
-      isSignIn() === 'sign-in' 
+      isSignIn() === 'sign-in'
         ? signInWithEmailAndPassword(getAuth(app), email(), password())
+          .catch((err) => { pushToast({ type: 'error', message: err }); console.log(err) })
         : createUserWithEmailAndPassword(getAuth(app), email(), password())
+          .then(() => { pushToast({ type: 'success', message: 'your user was created successfully :)' }) })
+          .catch((err) => { pushToast({ type: 'error', message: err }); console.log(err) })
     }
   }
 
@@ -35,7 +39,7 @@ export default function Login() {
         <SigInput sig={email} setSig={setEmail} type='email' placeholder='email' autocomplete='email' />
         <SigInput sig={password} setSig={setPassword} type='password' placeholder='password' autocomplete='password' />
         <button class="btn" onClick={signIn}>{isSignIn()}</button>
-        <button class="btn" onClick={() => setIsSignIn(isSignIn() === 'sign-in' ? 'sign-up': 'sign-in')}>swap</button>
+        <button class="btn" onClick={() => setIsSignIn(isSignIn() === 'sign-in' ? 'sign-up' : 'sign-in')}>swap</button>
       </div>
     </main>
   );

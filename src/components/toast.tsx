@@ -1,7 +1,11 @@
-import { createEffect, createSignal, For, onCleanup } from "solid-js";
+import { makeTimer } from "@solid-primitives/timer";
+import { createSignal, For } from "solid-js";
 
 const [toast, setToast] = createSignal<{ type: 'success' | 'warning' | 'error', message: string }[]>([]);
-export const pushToast = (t: ReturnType<typeof toast>[0]) => setToast([...toast(), t])
+export const pushToast = (t: ReturnType<typeof toast>[0]) => {
+  setToast([...toast(), t])
+  makeTimer(() => popToast(), 3000, setTimeout)
+}
 const popToast = () => {
   const t = toast()
   t.shift()
@@ -9,25 +13,26 @@ const popToast = () => {
 }
 
 export function Toast() {
-  createEffect(function setToast() {
-    let time: NodeJS.Timeout;
-    if (toast().length) {
-      time = setTimeout(() => { popToast() }, 3000)
-    }
-    onCleanup(() => clearTimeout(time))
-  })
+  const first3 = () => toast().slice(0, 3)
+  const rest = () => toast().slice(3)
 
-  return <div class="toast toast-center">
-    <For each={toast()}>
-      {(t) => <div class="alert"
-        classList={{
-          "alert-success": t.type === 'success',
-          "alert-warning": t.type === 'warning',
-          "alert-error": t.type === 'error',
-        }}
-      >
-        <span>{t.message}</span>
-      </div>}
-    </For>
+  return <div class="toast toast-start lg:toast-center">
+    <For each={first3()}>{t => <Alert t={t} />}</For>
+    <div class="stack">
+      <For each={rest()}>{t => <Alert t={t} />}</For>
+    </div>
+  </div>
+}
+
+const Alert = (props: { t: ReturnType<typeof toast>[0] }) => {
+
+  return <div class="alert"
+    classList={{
+      "alert-success": props.t.type === 'success',
+      "alert-warning": props.t.type === 'warning',
+      "alert-error": props.t.type === 'error',
+    }}
+  >
+    <span>{props.t.message}</span>
   </div>
 }

@@ -10,19 +10,17 @@ import { _addRoom, _addUserToRoom } from "~/utils/rooms";
 export default function Home() {
   const navigate = useNavigate()
 
+  const [newRoom, setNewRoom] = createSignal('')
+
   const app = useFirebaseApp()
   const db = getFirestore(app)
   const user = useAuth(getAuth(app))
-
-  createEffect(function routeGuard() {
-    if (user.loading) return
-    if (!user.data?.uid) navigate('/login')
-  })
-
   const rooms = useFirestore(collection(db, 'rooms'))
 
-  const [newRoom, setNewRoom] = createSignal('')
-
+  createEffect(function routeGuard() {
+    if (user.loading || user.error) return
+    if (!user.data?.uid) navigate('/login')
+  })
 
   const addRoom = async () => {
     if (user.data?.uid && newRoom()) {
@@ -33,28 +31,30 @@ export default function Home() {
   }
 
   return (
-    <main class="flex flex-col">
-      <Switch>
-        <Match when={rooms.data}>
-          <div class="flex flex-col items-start">
-            <For each={rooms.data}>{
-              (x) => <RoomDisplay room={x} user={user} />
-            }</For>
-          </div>
+    <Switch>
+      <Match when={rooms.data}>
+        <div class="flex flex-col items-start">
+          <For each={rooms.data}>{(x) => <RoomDisplay room={x} user={user} />}</For>
+        </div>
+        {user.data?.uid && <div class="flex gap-2">
 
-          {user.data?.uid && <div class="flex gap-2">
-            <SigInput sig={newRoom} setSig={setNewRoom} />
-            <button class="btn" onClick={addRoom}> add Room</button>
-          </div>}
-        </Match>
-        <Match when={rooms.loading}>
-          <span class="loading loading-ring loading-lg"></span>
-        </Match>
-        <Match when={rooms.error}>
-          <div>error: {rooms.error?.name}</div>
-        </Match>
-      </Switch>
-    </main>
+          <input
+            class="input text-white input-bordered w-52"
+            placeholder="room name"
+            type="text"
+            value={newRoom()}
+            onInput={(e) => setNewRoom(e.currentTarget.value)}
+          />
+          <button class="btn" onClick={addRoom}> add Room</button>
+        </div>}
+      </Match>
+      <Match when={rooms.loading}>
+        <span class="loading loading-ring loading-lg"></span>
+      </Match>
+      <Match when={rooms.error}>
+        <div>error: {rooms.error?.name}</div>
+      </Match>
+    </Switch>
   );
 }
 
@@ -72,9 +72,7 @@ function RoomDisplay(props: RoomDisplayProps) {
 
   const addUserToRoom = async (id: string) => {
     if (user.data) {
-      const arst = props.room.users[`${props.room.leadName}_${props.room.leadId}`][2]
-      console.log(arst)
-      _addUserToRoom(user.data, db, id, arst)
+      _addUserToRoom(user.data, db, id)
     }
   }
 
@@ -84,21 +82,22 @@ function RoomDisplay(props: RoomDisplayProps) {
     navigate(`/room/${id}`)
   }
 
-  return <div class="flex gap-4">
+  return <div class="flex gap-4 items-center">
     <button
       class={'btn'}
       classList={{
         glass: !!props.user.data?.uid,
         'hover:cursor-default hover:border-base-200 hover:bg-base-200': !props.user.data?.uid
       }}
-      onClick={goToRoom(props.room?.id)}>
+      onClick={goToRoom(props.room?.id)}
+    >
       {props.room?.name}
     </button>
     <div class="avatar-group -space-x-6 !overflow-visible">
       {Object.keys(props.room.users).map(x =>
         <div class="tooltip" data-tip={x.split("_")[0]}>
-          <div class="avatar bg-base-300">
-            <div class="w-12 ">
+          <div class="avatar placeholder bg-base-300">
+            <div class="w-12">
               <span>{x.charAt(0).toUpperCase()}</span>
             </div>
           </div>

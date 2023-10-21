@@ -1,6 +1,30 @@
 import { User } from "firebase/auth";
-import { addDoc, collection, deleteDoc, doc, getDoc, getFirestore, updateDoc } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDoc, getFirestore, setDoc, updateDoc } from "firebase/firestore";
 import { useAuth, useFirestore } from "solid-firebase";
+
+export const _labels = [
+  "Communication & Meetings",
+  "Initial Setup",
+  "Development",
+  "Revision/Bug-fixes",
+  "Writing Tests",
+  "Manual Testing",
+  "Merging & Deployment",
+  "Learning Time/Non-project",
+  "Confidence Level",
+]
+
+const labels = [
+  { label: "Communication & Meetings", value: 2, min: 1 },
+  { label: "Initial Setup", value: 2, min: 1 },
+  { label: "Development", value: 4, min: 1 },
+  { label: "Revision/Bug-fixes", value: 2, min: 1 },
+  { label: "Writing Tests", value: 2, min: 1 },
+  { label: "Manual Testing", value: 2, min: 1 },
+  { label: "Merging & Deployment", value: 2, min: 1 },
+  { label: "Learning Time/Non-project", value: 2, min: 1 },
+  { label: "Confidence Level", value: 2, min: 1 },
+]
 
 export const _leaveRoom = async (
   user: User,
@@ -12,9 +36,18 @@ export const _leaveRoom = async (
     const roomHasUser = !!docoData?.users[_makeUserName(user)]
     if (roomHasUser) {
       const { [_makeUserName(user)]: omitted, ...others } = docoData.users
-      await updateDoc(doc(db, 'rooms', id), {
-        users: others
-      })
+      if (user.uid === docoData.leadId) {
+        const newLead = Object.keys(others)[0].split("_")
+        await updateDoc(doc(db, 'rooms', id), {
+          leadName: newLead[0],
+          leadId: newLead[1],
+          users: others
+        })
+      } else {
+        await updateDoc(doc(db, 'rooms', id), {
+          users: others
+        })
+      }
     }
   }
 }
@@ -29,24 +62,19 @@ export const _deleteRoom = async (
   }
 }
 
-function aDefault(value: number, enabled = true) {
-  return {
-    enabled: enabled,
-    value,
-  }
-}
-function defaults(props: { [k: string]: ReturnType<typeof aDefault> }) {
-  return [
-    aDefault(1),
-    aDefault(1),
-    //props,
-    aDefault(2),
-    aDefault(4),
-    aDefault(1),
-    aDefault(0.5),
-    aDefault(1),
-    aDefault(1.1),
-  ]
+// function aDefault(value: number, enabled = true) {
+//   return {
+//     enabled: enabled,
+//     value,
+//   }
+// }
+export type a = { enabled: boolean, value: number, min: number }
+
+function defaults() {
+  return labels.reduce((acc, idv) => {
+    acc[idv.label] = { enabled: true, value: idv.value, min: idv.min }
+    return acc
+  }, {} as { [k: string]: a })
 }
 
 export const _makeUserName = (user: User) => `${user.displayName}_${user.uid}`
@@ -61,9 +89,7 @@ export const _addRoom = async (
     leadId: user.uid,
     leadName: user.displayName,
     users: {
-      [_makeUserName(user)]: [
-        ...defaults({})
-      ],
+      [_makeUserName(user)]: defaults()
     }
   })
   return (await getDoc(doco)).id
@@ -73,18 +99,17 @@ export const _addUserToRoom = async (
   user: User,
   db: ReturnType<typeof getFirestore>,
   roomId: string,
-  dev: { [k: string]: ReturnType<typeof aDefault> }
 ) => {
   if (user.uid) {
     const doco = await getDoc(doc(db, 'rooms', roomId));
     const docoData = doco.data()
-    const roomHasUser = !!doco.data()?.users[user.uid]
-    if (!roomHasUser) {
+    const userData = docoData?.users[_makeUserName(user)]
+    if (!userData) {
+      // to populate new users dev list
+      // const leadData = docoData?.users[`${docoData?.leadName}_${docoData?.leadId}`].Development
       await updateDoc(doc(db, 'rooms', roomId), {
         users: {
-          [_makeUserName(user)]: [
-            ...defaults(dev)
-          ],
+          [_makeUserName(user)]: defaults(),
           ...docoData?.users,
         },
       })
@@ -96,21 +121,18 @@ export const _updateUserScores = async (
   user: User,
   db: ReturnType<typeof getFirestore>,
   roomId: string,
-  values: ReturnType<typeof defaults>,
-  idx:number, 
+  label: string,
+  value: a
 ) => {
   if (user.uid) {
     const doco = await getDoc(doc(db, 'rooms', roomId));
     const docoData = doco.data()
-    const userData = doco.data()?.users[_makeUserName(user)]
-    if (!!userData) {
-      userData[idx] = values
-      await updateDoc(doc(db, 'rooms', roomId), {
-        users: {
-          [_makeUserName(user)]: userData,
-          ...docoData?.users,
-        },
-      })
+    const userName = _makeUserName(user)
+    const userData = doco.data()?.users[userName]
+    if (!!userData && !!docoData) {
+      userData[label] = value
+      docoData.users[userName] = userData
+      await updateDoc(doc(db, 'rooms', roomId), docoData)
     }
   }
 }

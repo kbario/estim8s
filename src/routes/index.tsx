@@ -5,25 +5,7 @@ import { createEffect, createSignal, For, Match, Show, Switch } from "solid-js";
 import { A, useNavigate } from "solid-start";
 import Counter from "~/components/Counter";
 import { SigInput } from "~/components/input";
-
-function aDefault(value: number, enabled = true) {
-  return {
-    enabled: enabled,
-    value,
-  }
-}
-function defaults() {
-  return [
-    aDefault(1),
-    aDefault(1),
-    aDefault(2),
-    aDefault(4),
-    aDefault(1),
-    aDefault(0.5),
-    aDefault(1),
-    aDefault(1.1),
-  ]
-}
+import { _addRoom, _addUserToRoom } from "~/utils/rooms";
 
 export default function Home() {
   const navigate = useNavigate()
@@ -44,18 +26,7 @@ export default function Home() {
 
   const addRoom = async () => {
     if (user.data?.uid && newRoom()) {
-      const doco = await addDoc(collection(db, 'rooms'), {
-        name: newRoom(),
-        leadId: user.data.uid,
-        leadName: user.data.displayName,
-        users: {
-          [user.data.uid]: [
-            ...defaults()
-          ],
-        }
-      })
-      // const id = await (await getDoc(doco)).data()?.id
-      const id = (await getDoc(doco)).id
+      const id = await _addRoom(user.data, db, newRoom())
       setNewRoom('')
       navigate(`room/${id}`)
     }
@@ -100,21 +71,10 @@ function RoomDisplay(props: RoomDisplayProps) {
   const user = useAuth(getAuth(app))
 
   const addUserToRoom = async (id: string) => {
-    if (user.data?.uid) {
-      const doco = await getDoc(doc(db, 'rooms', id));
-      const docoData = doco.data()
-      const roomHasUser = !!doco.data()?.users[user.data.uid]
-      console.log(docoData, roomHasUser)
-      if (!roomHasUser) {
-        await updateDoc(doc(db, 'rooms', id), {
-          users: {
-            [user.data.uid]: [
-              ...defaults()
-            ],
-            ...docoData?.users,
-          },
-        })
-      }
+    if (user.data) {
+      const arst = props.room.users[`${props.room.leadName}_${props.room.leadId}`][2]
+      console.log(arst)
+      _addUserToRoom(user.data, db, id, arst)
     }
   }
 
@@ -136,10 +96,10 @@ function RoomDisplay(props: RoomDisplayProps) {
     </button>
     <div class="avatar-group -space-x-6 !overflow-visible">
       {Object.keys(props.room.users).map(x =>
-        <div class="tooltip" data-tip={x}>
+        <div class="tooltip" data-tip={x.split("_")[0]}>
           <div class="avatar bg-base-300">
             <div class="w-12 ">
-              <span>{x.charAt(0)}</span>
+              <span>{x.charAt(0).toUpperCase()}</span>
             </div>
           </div>
         </div>

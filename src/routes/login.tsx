@@ -1,8 +1,9 @@
-import { getAuth, sendSignInLinkToEmail, signInWithEmailLink } from 'firebase/auth';
+import { getAuth, sendSignInLinkToEmail } from 'firebase/auth';
 import { useAuth, useFirebaseApp } from 'solid-firebase';
-import { createEffect, createRenderEffect, createSignal, onMount } from 'solid-js';
+import { createEffect, createSignal } from 'solid-js';
 import { useNavigate } from 'solid-start';
-import { Input, SigInput } from "~/components/input";
+import { SigInput } from "~/components/input";
+import { pushToast } from '~/components/toast';
 import { EMAIL_FOR_LOGIN } from '~/constants/localStorage';
 import { validateEmail } from '~/utils/emailValidation';
 
@@ -13,8 +14,8 @@ export default function Login() {
 
   const [email, setEmail] = createSignal('')
 
-  createEffect(function routeGuard(){
-    if (user.loading) return 
+  createEffect(function routeGuard() {
+    if (user.loading) return
     if (user.data?.uid) navigate('/')
   })
 
@@ -22,10 +23,17 @@ export default function Login() {
     if (validateEmail(email())) {
       sendSignInLinkToEmail(getAuth(app), email(), actionCodeSettings)
         .then(() => {
-          if (validateEmail(email())) {
-            window.localStorage.setItem(EMAIL_FOR_LOGIN, email())
-          }
+          window.localStorage.setItem(EMAIL_FOR_LOGIN, email())
+          pushToast({ type: 'success', message: 'Login email sent successfully. Check your spam.)' })
         })
+        .catch((err) => {
+          pushToast({ type: 'error', message: err })
+          console.log(err)
+        })
+    } else if (email() === '') {
+      pushToast({ type: 'warning', message: 'No email entered...' })
+    } else {
+      pushToast({ type: 'error', message: 'Invalid Email.' })
     }
   }
 

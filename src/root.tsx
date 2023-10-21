@@ -18,6 +18,7 @@ import "./root.css";
 import { initializeApp } from 'firebase/app'
 import { FirebaseProvider, useAuth, useFirebaseApp } from 'solid-firebase'
 import { getAuth } from "firebase/auth";
+import { Toast } from "./components/toast";
 
 const app = initializeApp({
   apiKey: "AIzaSyC-wWLRjfbyHlDvJpbHbF5x5gnU8jF38C4",
@@ -30,7 +31,6 @@ const app = initializeApp({
 })
 
 const navItems = [
-  { display: 'Home', url: '/' },
   { display: 'estim8', url: 'https://estim8.kbar.io/', target: "_blank" },
 ]
 
@@ -68,7 +68,6 @@ export default function Root() {
                   }
                   <li>
                     <A href='/account' class={`btn group`}>
-                      {/* <div class={`border-b-2 ${active('account')}`}></div> */}
                       <div class="avatar placeholder">
                         <Switch fallback={
                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -92,6 +91,7 @@ export default function Root() {
               <Routes>
                 <FileRoutes />
               </Routes>
+              <Toast />
             </FirebaseProvider>
           </ErrorBoundary>
         </Suspense>

@@ -46,24 +46,64 @@ export default function Room() {
   //
   const listSort = ([al]: [string, any], [bl]: [string, any]) => _labels?.indexOf(al) < _labels?.indexOf(bl) ? -1 : 1
 
-  const sum = (thing: [string, a][]) => {
-    const idx = thing?.findIndex(([s]) => s === 'Confidence Level')
-    if (typeof idx !== 'number' && !idx && idx !== -1) return undefined
-    const factor = thing[idx]?.[1]
-    const summers = idx ? thing.splice(idx, 1) : thing
-    const sum = summers.reduce((acc, [label, idv]) => {
-      acc += idv.enabled ? idv.value : 0
-      return acc
-    }, 0)
-    return factor?.enabled ? sum * factor.value : sum
+
+  // const arst = (acc: number, idv: Thing | EnclosedThing) => {
+  //   if (isEnclosedThing(idv)) {
+  //     acc += idv.data.reduce(arst, 0);
+  //   } else {
+  //     acc += idv.enabled ? parseFloat(idv.hours) || 0 : 0;
+  //   }
+  //   return acc;
+  // };
+
+  const SEARCH_PARAM_NAME = "D";
+  const zxcd = (init: string) => (acc: string, idv: a, idx: number) => {
+    acc += idv.enabled
+      ? `${init}- ${_labels[idx]}: ${idv.value}${getPlurality(idv.value)} \n`
+      : "";
+    return acc;
+  };
+
+  const getPlurality = (a?: string) => (a === "1" ? "hr" : "hrs");
+  const copy = () => {
+    const qwer =
+      myFactor()?.enabled && myFactor()?.value
+        ? `\ntotal: ${mySum()} * ${myFactor()?.value} = **${mySumByFactor()
+          }${getPlurality(mySumByFactor()?.toString())}**`.toString()
+        : `\ntotal: **${mySum()}${getPlurality(
+          mySum()?.toString()
+        )}**`.toString();
+    const jkl = `\n\n[Re-estim8 here](https://estim8.kbar.io/?${SEARCH_PARAM_NAME}=${encodeURIComponent(
+      JSON.stringify(userScores()),
+    )})`;
+    const zxcv = Object.values(userScores()).reduce(zxcd(""), "") + qwer + jkl;
+    navigator.clipboard.writeText(zxcv);
   }
 
-  const userScores = createMemo((): [string, a][] =>
-    !user.loading && !room.loading && user.data?.uid && room.data?.leadId && room.data?.users[_makeUserName(user.data)]
-      ? Object.entries(room.data?.users[_makeUserName(user.data)])
-        ?.sort(listSort) as [string, a][]
-      : []) as Accessor<[string, a][]>
-  // const mySum = createMemo(() => sum(userScores()))
+  const factor = (thing: { [k: string]: a }) => {
+    if (!thing) return undefined;
+    return thing?.['Confidence Level']
+  }
+
+  const sum = (thing: { [k: string]: a }) => {
+    if (!thing) return undefined;
+    const { ['Confidence Level']: arst, ...rest } = thing
+    return Object.values(rest).reduce((acc, idv) => {
+      acc += (idv.enabled ? parseFloat(idv.value) : 0)
+      return acc
+    }, 0)
+  }
+
+  // const sumByFactor = () => factor()?.enabled ? factor()?.value * sum() : sum()
+  const userScores = (): { [k: string]: a } => user.data?.uid ? room.data?.users[_makeUserName(user.data)] : {}
+  // const userScores = createMemo((): [string, a][] =>
+  //   !user.loading && !room.loading && user.data?.uid && room.data?.leadId && room.data?.users[_makeUserName(user.data)]
+  //     ? Object.entries()
+  //       ?.sort(listSort) as [string, a][]
+  //     : []) as Accessor<[string, a][]>
+  const mySum = createMemo(() => sum(userScores()))
+  const myFactor = createMemo(() => factor(userScores()))
+  const mySumByFactor = createMemo(() => myFactor()?.enabled ? Math.ceil(parseFloat((mySum() || 0)) * parseFloat((myFactor()?.value || 1))) : mySum())
   const otherUserScores = createMemo(() => {
     if (!!user.data?.uid && room.data?.users) {
       const { [_makeUserName(user.data)]: omitted, ...others } = room.data.users
@@ -73,20 +113,20 @@ export default function Room() {
   }) as Accessor<[string, { [k: string]: a }][]>
   //#endregion derived state
 
-  return <div>
+  return <div class="flex flex-col gap-4">
     <h3 class="text-xl ">{room.data?.name}</h3>
-    {room.data?.leadName}
-    <div class="flex gap-4">
+    <div class="flex gap-8">
       <div class="flex flex-col">
-        {userScores() && <For each={userScores()}>
-          {([label, score]) => {
-            const mut = JSON.parse(JSON.stringify(score))
+        {user.data?.displayName}
+        {userScores() && <For each={_labels}>
+          {l => {
+            if (!userScores()[l]) return
+            const mut = JSON.parse(JSON.stringify(userScores()[l]))
             const trigger = debounce(async () => {
-              console.log(mut)
               user.data &&
-                await _updateUserScores(user.data, db, params.id, label, mut)
+                await _updateUserScores(user.data, db, params.id, l, mut)
             }, 1000)
-            return <div class="flex gap-1 justify-between">
+            return <div class="flex h-16 items-center justify-between">
               <div class="form-control">
                 <label class="label cursor-pointer flex gap-2">
                   <input
@@ -94,7 +134,7 @@ export default function Room() {
                     type="checkbox"
                     checked={mut.enabled}
                     onChange={(e) => { mut.enabled = e.target.checked; trigger() }} />
-                  <span class="label-text">{label}</span>
+                  <span class="label-text">{l}</span>
                 </label>
               </div>
               <input
@@ -103,7 +143,7 @@ export default function Room() {
                 type="number"
                 pattern="\d*"
                 value={mut.value}
-                onInput={(e) => { mut.value = e.currentTarget.value; trigger() }}
+                onInput={(e) => { mut.value = parseFloat(e.currentTarget.value); trigger() }}
               />
             </div>
           }}
@@ -115,10 +155,19 @@ export default function Room() {
           return <OtherUserScores entries={entries} idx={idx()} name={user.split("_")[0]} />
         }}
       </For>
-    </div >
-    <div class="flex gap-1 absolute right-4 bottom-4">
-      <button onClick={leaveRoom} class="btn">leave room</button>
-      {(room.data?.leadId === user.data?.uid) && <button onClick={deleteRoom} class="btn">delete room</button>}
+    </div>
+    <div>
+      <span>{mySum()}</span>
+      <Show when={myFactor()?.enabled}> * {myFactor()?.value} = {mySumByFactor()}</Show>
+    </div>
+    <div class="flex flex-col gap-1 items-end absolute right-4 bottom-4">
+      <div class="">
+        <button class="btn" onClick={copy}>Copy</button>
+      </div>
+      <div class="flex gap-1">
+        <button onClick={leaveRoom} class="btn">leave room</button>
+        {(room.data?.leadId === user.data?.uid) && <button onClick={deleteRoom} class="btn">delete room</button>}
+      </div>
     </div>
   </div >
 }
@@ -147,16 +196,18 @@ const OtherUserScores = (props: { entries: [string, a][], idx: number, name: str
     { main: 'bg-warning text-warning-content', second: 'bg-warning-content text-warning' },
     { main: 'bg-error text-error-content', second: 'bg-error-content text-error' },
   ]
-  return <div class="flex flex-col gap-1">
+  return <div class="flex flex-col items-center">
     <div>{props.name}</div>
     <For each={props.entries}>{([_, score]) =>
-      <div class="w-8 aspect-square flex items-center justify-center rounded-full"
-        classList={{
-          [classes[props.idx].main]: score.enabled,
-          [classes[props.idx].second]: !score.enabled,
-        }}
-      >
-        {score.value}
+      <div class="flex items-center justify-center h-16">
+        <div class="w-8 aspect-square flex items-center justify-center rounded-full"
+          classList={{
+            [classes[props.idx].main]: score.enabled,
+            [classes[props.idx].second]: !score.enabled,
+          }}
+        >
+          {score.value}
+        </div>
       </div>
     }</For>
   </div>

@@ -31,8 +31,8 @@ export default function Room() {
   //#endregion firebase
 
   //#region derived state
-  createEffect(function leaveIfRoomIsDeleted() {
-    if (!room.data?.leadId && !room.loading) {
+  createEffect(function leaveIfRoomIsDeletedOrYourUserHasLeft() {
+    if ((!room.data?.leadId || !!user.data && !room.data.users[_makeUserName(user.data)]) && !room.loading) {
       navigate('/')
     }
   })

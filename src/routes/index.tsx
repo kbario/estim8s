@@ -26,6 +26,7 @@ export default function Home() {
     if (user.data?.uid && newRoom()) {
       const id = await _addRoom(user.data, db, newRoom())
       setNewRoom('')
+      while (!rooms.data?.[id] || (user.data?.uid && !rooms.data?.[id]?.user?.[user.data.uid])) { }
       navigate(`room/${id}`)
     }
   }

@@ -118,7 +118,7 @@ export default function Room() {
   }) as Accessor<[string, { [k: string]: a }][]>
   //#endregion derived state
 
-  return <div class="flex flex-col gap-4 min-w-fit">
+  return <div class="flex flex-col gap-4 min-w-fit h-full overflow-auto">
     <Show when={room.data && !room.loading}
       fallback={
         <span class="loading loading-ring loading-lg"></span>
@@ -127,7 +127,7 @@ export default function Room() {
       <h3 class="text-2xl font-bold">{room.data?.name}</h3>
       <div class="flex gap-8">
         <div class="flex flex-col">
-          {user.data?.displayName}
+          <div class="bg-base-100 top-0 sticky">{user.data?.displayName}</div>
           {userScores() && <For each={_labels}>
             {l => {
               if (!userScores()[l]) return
@@ -167,7 +167,7 @@ export default function Room() {
           }}
         </For>
       </div>
-      {!room.loading && room.data && <div class="flex gap-4 items-end">
+      {!room.loading && room.data && <div class="flex gap-4 sticky bottom-0 left-0 items-end bg-base-100 pt-2">
         <div class="flex flex-col">
           total
           <div class="text-2xl">
@@ -220,7 +220,7 @@ const OtherUserScores = (props: { entries: [string, a][], idx: number, name: str
     { main: 'bg-error text-error-content', second: 'bg-error-content text-error' },
   ]
   return <div class="flex flex-col items-center">
-    <div>{props.name}</div>
+    <div class="sticky top-0 bg-base-100">{props.name}</div>
     <For each={props.entries}>{([_, score]) =>
       <div class="flex items-center justify-center h-16">
         <div class="w-8 aspect-square flex items-center justify-center rounded-full"

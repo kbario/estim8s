@@ -33,11 +33,10 @@ export default function Home() {
   return (
     <Switch>
       <Match when={rooms.data}>
-        <div class="flex flex-col items-start">
+        {rooms.data?.length && <div class="flex flex-col items-start">
           <For each={rooms.data}>{(x) => <RoomDisplay room={x} user={user} />}</For>
-        </div>
+        </div>}
         {user.data?.uid && <div class="flex gap-2">
-
           <input
             class="input text-white input-bordered w-52"
             placeholder="room name"

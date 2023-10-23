@@ -15,15 +15,15 @@ export const _labels = [
 ]
 
 const labels = [
-  { label: "Communications & Meetings", value: 2, min: 1 },
-  { label: "Initial Setup", value: 2, min: 1 },
+  { label: "Communications & Meetings", value: 1, min: 1 },
+  { label: "Initial Setup", value: 1, min: 1 },
   { label: "Development", value: 4, min: 1 },
   { label: "Revision/bug-fixes", value: 2, min: 1 },
   { label: "Writing Tests", value: 2, min: 1 },
-  { label: "Manual Testing", value: 2, min: 1 },
-  { label: "Merging & Deployments", value: 2, min: 1 },
-  { label: "Learning Time/Non-project", value: 2, min: 1 },
-  { label: "Confidence Level", value: 2, min: 1 },
+  { label: "Manual Testing", value: 1, min: 1 },
+  { label: "Merging & Deployments", value: 0.5, min: 1 },
+  { label: "Learning Time/Non-project", value: 1, min: 1 },
+  { label: "Confidence Level", value: 1.1, min: 1 },
 ]
 
 export const _leaveRoom = async (

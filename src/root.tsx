@@ -77,7 +77,7 @@ export default function Root() {
                   </li>
                 </ul>
               </nav>
-              <main class="flex flex-col gap-4 p-4 h-[calc(100svh-64px)] mx-auto">
+              <main class="flex flex-col gap-4 p-4 relative h-[calc(100svh-64px)] w-screen overflow-hidden">
                 <Routes>
                   <FileRoutes />
                 </Routes>

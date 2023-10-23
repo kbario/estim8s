@@ -68,11 +68,11 @@ export const _deleteRoom = async (
 //     value,
 //   }
 // }
-export type a = { enabled: boolean, value: number, min: number }
+export type a = { enabled: boolean, value: number, min: number, updated: boolean }
 
 function defaults() {
   return labels.reduce((acc, idv) => {
-    acc[idv.label] = { enabled: true, value: idv.value, min: idv.min }
+    acc[idv.label] = { enabled: true, value: idv.value, min: idv.min, updated: false }
     return acc
   }, {} as { [k: string]: a })
 }
@@ -117,6 +117,21 @@ export const _addUserToRoom = async (
   }
 }
 
+export const _reserScore = async (
+  db: ReturnType<typeof getFirestore>,
+  roomId: string,
+) => {
+  const doco = await getDoc(doc(db, 'rooms', roomId));
+  const docoData = doco.data()
+  if (!!docoData) {
+    docoData.users = Object.keys(docoData.users).reduce((acc, idv: string) => {
+      acc[idv] = defaults()
+      return acc
+    }, {} as { [l: string]: { [k: string]: a } })
+    await updateDoc(doc(db, 'rooms', roomId), docoData)
+  }
+}
+
 export const _updateUserScores = async (
   user: User,
   db: ReturnType<typeof getFirestore>,
@@ -130,6 +145,7 @@ export const _updateUserScores = async (
     const userName = _makeUserName(user)
     const userData = doco.data()?.users[userName]
     if (!!userData && !!docoData) {
+      value.updated = true
       userData[label] = value
       docoData.users[userName] = userData
       await updateDoc(doc(db, 'rooms', roomId), docoData)

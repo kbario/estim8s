@@ -2,10 +2,10 @@ import { debounce } from "@solid-primitives/scheduled";
 import { getAuth } from "firebase/auth";
 import { doc, getFirestore } from "firebase/firestore";
 import { useAuth, useFirebaseApp, useFirestore } from "solid-firebase";
-import { Accessor, createEffect, createMemo, For, Show } from "solid-js";
+import { Accessor, createEffect, createMemo, createSignal, For, Show } from "solid-js";
 import { useNavigate, useParams } from "solid-start";
 import { Input } from "~/components/input";
-import { a, _deleteRoom, _labels, _leaveRoom, _makeUserName, _updateUserScores } from "~/utils/rooms";
+import { a, _deleteRoom, _labels, _leaveRoom, _makeUserName, _reserScore, _updateUserScores } from "~/utils/rooms";
 
 export default function Room() {
   //#region solid
@@ -60,7 +60,8 @@ export default function Room() {
   // };
 
   const SEARCH_PARAM_NAME = "D";
-  const zxcd = (init: string) => (acc: string, idv: a, idx: number) => {
+  const zxcd = (init: string) => (acc: string, idv: a, idx: number, arr: a[]) => {
+    if ((arr.length - 1) === idx) return acc
     acc += idv.enabled
       ? `${init}- ${_labels[idx]}: ${idv.value}${getPlurality(idv.value.toString())} \n`
       : "";
@@ -79,8 +80,15 @@ export default function Room() {
     const jkl = `\n\n[Re-estim8 here](https://estim8.kbar.io/?${SEARCH_PARAM_NAME}=${encodeURIComponent(
       JSON.stringify(thisToThat(userScores())),
     )})`;
-    const zxcv = Object.values(userScores()).reduce(zxcd(""), "") + qwer + jkl;
+    const zxcv = Object.values(userScoresLabels()).reduce(zxcd(""), "") + qwer + jkl;
     navigator.clipboard.writeText(zxcv);
+  }
+
+  const reset = async () => {
+    const ruSure = confirm('do you wish to reset the estimates?')
+    if (ruSure) {
+      await _reserScore(db, params.id)
+    }
   }
 
   const factor = (thing: { [k: string]: a }) => {
@@ -98,7 +106,8 @@ export default function Room() {
   }
 
   // const sumByFactor = () => factor()?.enabled ? factor()?.value * sum() : sum()
-  const userScores = (): { [k: string]: a } => user.data?.uid ? room.data?.users[_makeUserName(user.data)] : {}
+  const userScores = createMemo((): { [k: string]: a } => user.data?.uid ? room.data?.users[_makeUserName(user.data)] : {})
+  const userScoresLabels = createMemo(() => _labels.map(l => userScores()?.[l]))
   // const userScores = createMemo((): [string, a][] =>
   //   !user.loading && !room.loading && user.data?.uid && room.data?.leadId && room.data?.users[_makeUserName(user.data)]
   //     ? Object.entries()
@@ -116,56 +125,68 @@ export default function Room() {
   }) as Accessor<[string, { [k: string]: a }][]>
   //#endregion derived state
 
-  return <div class="flex flex-col gap-4 min-w-fit h-full overflow-auto">
+  return <div class="flex flex-col gap-4 max-h-full min-h-max w-full">
     <Show when={room.data && !room.loading}
       fallback={
         <span class="loading loading-ring loading-lg"></span>
       }
     >
       <h3 class="text-2xl font-bold">{room.data?.name}</h3>
-      <div class="flex gap-8">
-        <div class="flex flex-col">
-          <div class="bg-base-100 top-0 sticky">{user.data?.displayName}</div>
-          {userScores() && <For each={_labels}>
-            {l => {
-              if (!userScores()[l]) return
-              const mut = JSON.parse(JSON.stringify(userScores()[l]))
-              const trigger = debounce(async () => {
-                user.data &&
-                  await _updateUserScores(user.data, db, params.id, l, mut)
-              }, 500)
-              return <div class="flex gap-4 h-16 items-center justify-between">
-                <div class="form-control">
-                  <label class="label cursor-pointer flex gap-2">
-                    <input
-                      class="checkbox"
-                      type="checkbox"
-                      checked={mut.enabled}
-                      onChange={(e) => { mut.enabled = e.target.checked; trigger() }} />
-                    <span class="label-text">{l}</span>
-                  </label>
+      <div class="w-full h-full overflow-auto">
+        <div class="flex gap-8 h-max w-full min-w-max">
+          <div class="flex flex-col w-[400px] h-max sticky z-40 bg-base-100 left-0">
+            <div class="bg-base-100 top-0 sticky z-[45]">{user.data?.displayName}</div>
+            {userScores() && <For each={userScoresLabels()}>
+              {(l, idx) => {
+                const [mut, setMut] = createSignal<a>({} as a)
+                createEffect(() => setMut(l))
+                const setMutEnabled = (enabled: boolean) => {
+                  const q = JSON.parse(JSON.stringify(mut()))
+                  q.enabled = enabled
+                  setMut(q)
+                }
+                const setMutValue = (value: number) => {
+                  const q = JSON.parse(JSON.stringify(mut()))
+                  q.value = value
+                  setMut(q)
+                }
+                const trigger = debounce(async () => {
+                  user.data &&
+                    await _updateUserScores(user.data, db, params.id, _labels[idx()], mut())
+                }, 500)
+                return <div class="flex gap-4 h-16 items-center justify-between">
+                  <div class="form-control sticky bg-base-100 left-0">
+                    <label class="label cursor-pointer flex gap-2">
+                      <input
+                        class="checkbox"
+                        type="checkbox"
+                        checked={l.enabled}
+                        onChange={(e) => { setMutEnabled(e.target.checked); trigger() }} />
+                      <span class="label-text">{_labels[idx()]}</span>
+                    </label>
+                  </div>
+                  <input
+                    class="input text-white input-bordered w-24 input-primary"
+                    placeholder="estim8"
+                    type="number"
+                    disabled={!l.enabled}
+                    pattern="\d*"
+                    value={l.value}
+                    onInput={(e) => { setMutValue(parseFloat(e.currentTarget.value)); trigger() }}
+                  />
                 </div>
-                <input
-                  class="input text-white input-bordered w-24 input-primary"
-                  placeholder="estim8"
-                  type="number"
-                  disabled={!userScores()[l].enabled}
-                  pattern="\d*"
-                  value={mut.value}
-                  onInput={(e) => { mut.value = parseFloat(e.currentTarget.value); trigger() }}
-                />
-              </div>
+              }}
+            </For>}
+          </div>
+          <For each={otherUserScores()}>
+            {([user, scores], idx) => {
+              const entries = Object.entries(scores)?.sort(listSort)
+              return <OtherUserScores entries={entries} idx={idx()} name={user.split("_")[0]} />
             }}
-          </For>}
+          </For>
         </div>
-        <For each={otherUserScores()}>
-          {([user, scores], idx) => {
-            const entries = Object.entries(scores)?.sort(listSort)
-            return <OtherUserScores entries={entries} idx={idx()} name={user.split("_")[0]} />
-          }}
-        </For>
       </div>
-      {!room.loading && room.data && <div class="flex gap-4 sticky bottom-0 left-0 items-end bg-base-100 pt-2">
+      {!room.loading && room.data && <div class="flex gap-4 sticky bottom-0 left-0 z-50 items-end bg-base-100 pt-2">
         <div class="flex flex-col">
           total
           <div class="text-2xl">
@@ -179,10 +200,11 @@ export default function Room() {
           </div>
         </div>
         <button class="btn" onClick={copy}>Copy</button>
+        <button class="btn" onClick={reset}>Reset</button>
       </div>
       }
     </Show>
-    <div class="flex flex-col gap-1 items-end absolute right-4 bottom-4">
+    <div class="flex flex-col gap-1 items-end absolute right-4 z-[60] bottom-4">
       <div class="">
       </div>
       <div class="flex gap-1">
@@ -195,35 +217,36 @@ export default function Room() {
 
 const OtherUserScores = (props: { entries: [string, a][], idx: number, name: string }) => {
   const classes = [
-    { main: 'bg-primary text-primary-content', second: 'bg-primary-content text-primary' },
-    { main: 'bg-secondary text-secondary-content', second: 'bg-secondary-content text-secondary' },
-    { main: 'bg-accent text-accent-content', second: 'bg-accent-content text-accent' },
-    { main: 'bg-info text-info-content', second: 'bg-info-content text-info' },
-    { main: 'bg-success text-success-content', second: 'bg-success-content text-success' },
-    { main: 'bg-warning text-warning-content', second: 'bg-warning-content text-warning' },
-    { main: 'bg-error text-error-content', second: 'bg-error-content text-error' },
-    { main: 'bg-primary text-primary-content', second: 'bg-primary-content text-primary' },
-    { main: 'bg-secondary text-secondary-content', second: 'bg-secondary-content text-secondary' },
-    { main: 'bg-accent text-accent-content', second: 'bg-accent-content text-accent' },
-    { main: 'bg-info text-info-content', second: 'bg-info-content text-info' },
-    { main: 'bg-success text-success-content', second: 'bg-success-content text-success' },
-    { main: 'bg-warning text-warning-content', second: 'bg-warning-content text-warning' },
-    { main: 'bg-error text-error-content', second: 'bg-error-content text-error' },
-    { main: 'bg-primary text-primary-content', second: 'bg-primary-content text-primary' },
-    { main: 'bg-secondary text-secondary-content', second: 'bg-secondary-content text-secondary' },
-    { main: 'bg-accent text-accent-content', second: 'bg-accent-content text-accent' },
-    { main: 'bg-info text-info-content', second: 'bg-info-content text-info' },
-    { main: 'bg-success text-success-content', second: 'bg-success-content text-success' },
-    { main: 'bg-warning text-warning-content', second: 'bg-warning-content text-warning' },
-    { main: 'bg-error text-error-content', second: 'bg-error-content text-error' },
+    // { main: 'bg-primary text-primary-content', updated: 'bg-primary-focus text-primary-focus-content', second: 'bg-primary-content text-primary' },
+    { main: 'bg-secondary text-secondary-content opacity-50', updated: 'bg-secondary-focus text-secondary-content', second: 'bg-secondary-content text-secondary' },
+    { main: 'bg-accent text-accent-content opacity-50', updated: 'bg-accent-focus text-accent-content', second: 'bg-accent-content text-accent' },
+    { main: 'bg-info text-info-content opacity-50', updated: 'bg-info-focus text-info-content', second: 'bg-info-content text-info' },
+    { main: 'bg-success text-success-content opacity-50', updated: 'bg-success-focus text-success-content', second: 'bg-success-content text-success' },
+    { main: 'bg-warning text-warning-content opacity-50', updated: 'bg-warning-focus text-warning-content', second: 'bg-warning-content text-warning' },
+    { main: 'bg-error text-error-content opacity-50', updated: 'bg-error-focus text-error-content', second: 'bg-error-content text-error' },
+    { main: 'bg-primary text-primary-content opacity-50', updated: 'bg-primary-focus text-primary-content', second: 'bg-primary-content text-primary' },
+    { main: 'bg-secondary text-secondary-content opacity-50', updated: 'bg-secondary-focus text-secondary-content', second: 'bg-secondary-content text-secondary' },
+    { main: 'bg-accent text-accent-content opacity-50', updated: 'bg-accent-focus text-accent-content', second: 'bg-accent-content text-accent' },
+    { main: 'bg-info text-info-content opacity-50', updated: 'bg-info-focus text-info-content', second: 'bg-info-content text-info' },
+    { main: 'bg-success text-success-content opacity-50', updated: 'bg-success-focus text-success-content', second: 'bg-success-content text-success' },
+    { main: 'bg-warning text-warning-content opacity-50', updated: 'bg-warning-focus text-warning-content', second: 'bg-warning-content text-warning' },
+    { main: 'bg-error text-error-content opacity-50', updated: 'bg-error-focus text-error-content', second: 'bg-error-content text-error' },
+    { main: 'bg-primary text-primary-content opacity-50', updated: 'bg-primary-focus text-primary-content', second: 'bg-primary-content text-primary' },
+    { main: 'bg-secondary text-secondary-content opacity-50', updated: 'bg-secondary-focus text-secondary-content', second: 'bg-secondary-content text-secondary' },
+    { main: 'bg-accent text-accent-content opacity-50', updated: 'bg-accent-focus text-accent-content', second: 'bg-accent-content text-accent' },
+    { main: 'bg-info text-info-content opacity-50', updated: 'bg-info-focus text-info-content', second: 'bg-info-content text-info' },
+    { main: 'bg-success text-success-content opacity-50', updated: 'bg-success-focus text-success-content', second: 'bg-success-content text-success' },
+    { main: 'bg-warning text-warning-content opacity-50', updated: 'bg-warning-focus text-warning-content', second: 'bg-warning-content text-warning' },
+    { main: 'bg-error text-error-content opacity-50', updated: 'bg-error-focus text-error-content', second: 'bg-error-content text-error' },
   ]
-  return <div class="flex flex-col items-center">
-    <div class="sticky top-0 bg-base-100">{props.name}</div>
+  return <div class="flex flex-col items-center h-max">
+    <div class="sticky top-0 bg-base-100 z-20 w-full text-center">{props.name}</div>
     <For each={props.entries}>{([_, score]) =>
       <div class="flex items-center justify-center h-16">
-        <div class="w-8 aspect-square flex items-center justify-center rounded-full"
+        <div class="w-8 aspect-square flex items-center justify-center rounded-full cursor-default"
           classList={{
-            [classes[props.idx].main]: score.enabled,
+            [classes[props.idx].main]: score.enabled && !score.updated,
+            [classes[props.idx].updated]: score.enabled && score.updated,
             [classes[props.idx].second]: !score.enabled,
           }}
         >

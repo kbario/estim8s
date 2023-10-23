@@ -37,8 +37,6 @@ export default function Room() {
     }
   })
 
-  createEffect(() => console.log(userScores()))
-
   // const youBecameLead = createMemo((prev) => !prev && (user.data?.uid === room.data?.leadId) && !user.loading && !room.loading, false)
   // createEffect(function notifyWhenYouBecomeLead() {
   //   if(youBecameLead()) pushToast({ type: 'warning', message: "You're now the room lead"})

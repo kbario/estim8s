@@ -1,4 +1,4 @@
-import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useAuth, useFirebaseApp } from 'solid-firebase';
 import { createEffect, createSignal } from 'solid-js';
 import { useNavigate } from 'solid-start';
@@ -14,7 +14,7 @@ export default function Login() {
   const [email, setEmail] = createSignal('')
   const [password, setPassword] = createSignal('')
 
-  const [isSignIn, setIsSignIn] = createSignal<'sign-in' | 'sign-up'>('sign-in')
+  const [isSignIn, setIsSignIn] = createSignal<'sign-in' | 'sign-up'>('sign-up')
 
   createEffect(function routeGuard() {
     if (user.loading) return
@@ -27,7 +27,13 @@ export default function Login() {
         ? signInWithEmailAndPassword(getAuth(app), email(), password())
           .catch((err) => { pushToast({ type: 'error', message: err }); console.log(err) })
         : createUserWithEmailAndPassword(getAuth(app), email(), password())
-          .then(() => { pushToast({ type: 'success', message: 'your user was created successfully :)' }) })
+          .then(() => {
+            pushToast({ type: 'success', message: 'your user was created successfully :)' })
+            while (!user.data || user.loading) { }
+            updateProfile(user.data, { displayName: user.data.email })
+            // .then(() => pushToast({ type: 'success', message: 'display name updated' }))
+            // .catch((error) => { pushToast({ type: 'error', message: 'could not update display name' }); console.log(error) })
+          })
           .catch((err) => { pushToast({ type: 'error', message: err }); console.log(err) })
     }
   }

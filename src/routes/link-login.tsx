@@ -17,7 +17,7 @@ export default function LinkLogin() {
 
   onMount(() => {
     const auth = getAuth(app);
-    if (!isSignInWithEmailLink(auth, window.location.href)) return;
+    if (!isSignInWithEmailLink(auth, window.location.href)) return navigate('/');
     let email = window.localStorage.getItem(EMAIL_FOR_LOGIN);
     if (!email) {
       email = window.prompt('Please provide your email for confirmation')

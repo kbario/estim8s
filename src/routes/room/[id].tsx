@@ -5,7 +5,7 @@ import { useAuth, useFirebaseApp, useFirestore } from "solid-firebase";
 import { Accessor, createEffect, createMemo, createSignal, For, Show } from "solid-js";
 import { useNavigate, useParams } from "solid-start";
 import { Input } from "~/components/input";
-import { a, _deleteRoom, _labels, _leaveRoom, _makeUserName, _reserScore, _updateUserScores } from "~/utils/rooms";
+import { a, _deleteRoom, _labels, _leaveRoom, _makeUserName, _reserAllUserScores, _reserScore, _reserUserScores, _updateUserScores } from "~/utils/rooms";
 
 export default function Room() {
   //#region solid
@@ -84,12 +84,20 @@ export default function Room() {
     navigator.clipboard.writeText(zxcv);
   }
 
-  const reset = async () => {
+  const resetEverything = async () => {
     const ruSure = confirm('do you wish to reset the estimates?')
     if (ruSure) {
-      await _reserScore(db, params.id)
+      await _reserAllUserScores(db, params.id)
     }
   }
+
+  const resetMe = async () => {
+    const ruSure = confirm('do you wish to reset the estimates?')
+    if (ruSure && user.data) {
+      await _reserUserScores(db, params.id, user.data)
+    }
+  }
+
 
   const factor = (thing: { [k: string]: a }) => {
     if (!thing) return undefined;
@@ -160,18 +168,19 @@ export default function Room() {
                       <input
                         class="checkbox"
                         type="checkbox"
-                        checked={l.enabled}
+                        checked={mut().enabled}
                         onChange={(e) => { setMutEnabled(e.target.checked); trigger() }} />
                       <span class="label-text">{_labels[idx()]}</span>
                     </label>
                   </div>
                   <input
-                    class="input text-white input-bordered w-24 input-primary"
+                    class="input text-white input-bordered w-24"
+                    classList={{ 'input-primary': mut().updated }}
                     placeholder="estim8"
                     type="number"
-                    disabled={!l.enabled}
+                    disabled={!mut().enabled}
                     pattern="\d*"
-                    value={l.value}
+                    value={mut().value}
                     onInput={(e) => { setMutValue(parseFloat(e.currentTarget.value)); trigger() }}
                   />
                 </div>
@@ -186,7 +195,7 @@ export default function Room() {
           </For>
         </div>
       </div>
-      {!room.loading && room.data && <div class="flex gap-4 sticky bottom-0 left-0 z-50 items-end bg-base-100 pt-2">
+      {!room.loading && room.data && <div class="flex gap-6 sticky bottom-0 left-0 z-50 items-end bg-base-100 pt-2">
         <div class="flex flex-col">
           total
           <div class="text-2xl">
@@ -199,18 +208,41 @@ export default function Room() {
             </Show>
           </div>
         </div>
-        <button class="btn" onClick={copy}>Copy</button>
-        <button class="btn" onClick={reset}>Reset</button>
+        <div class="gap-1 md:flex hidden">
+          <button class="btn" onClick={copy}>Copy</button>
+          <button class="btn" onClick={resetMe}>Reset Me</button>
+          <button class="btn" onClick={resetEverything}>Reset Everything</button>
+        </div>
       </div>
       }
     </Show>
-    <div class="flex flex-col gap-1 items-end absolute right-4 z-[60] bottom-4">
-      <div class="">
-      </div>
-      <div class="flex gap-1">
-        <button onClick={leaveRoom} class="btn">leave room</button>
-        {(room.data?.leadId === user.data?.uid) && <button onClick={deleteRoom} class="btn">delete room</button>}
-      </div>
+    <div class="md:flex hidden flex-col gap-1 items-end absolute right-4 z-[60] bottom-4">
+      <button onClick={leaveRoom} class="btn">leave room</button>
+      {(room.data?.leadId === user.data?.uid) && <button onClick={deleteRoom} class="btn">delete room</button>}
+    </div>
+    <div class="flex md:hidden absolute bottom-4 right-4  items-end w-full justify-end">
+      <details class="dropdown dropdown-top dropdown-end z-[60]">
+        <summary class="btn">
+            <svg class="swap-off fill-current" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 512 512"><path d="M64,384H448V341.33H64Zm0-106.67H448V234.67H64ZM64,128v42.67H448V128Z" /></svg>
+        </summary>
+        <ul class="p-2 shadow menu dropdown-content z-[1] bg-base-100 rounded-box w-52">
+          <li>
+            <button class="btn" onClick={copy}>Copy</button>
+          </li>
+          <li>
+            <button class="btn" onClick={resetMe}>Reset Me</button>
+          </li>
+          <li>
+            <button class="btn" onClick={resetEverything}>Reset Everything</button>
+          </li>
+          <li>
+            <button onClick={leaveRoom} class="btn">leave room</button>
+          </li>
+          {(room.data?.leadId === user.data?.uid) && <li>
+            <button onClick={deleteRoom} class="btn">delete room</button>
+          </li>}
+        </ul>
+      </details>
     </div>
   </div >
 }

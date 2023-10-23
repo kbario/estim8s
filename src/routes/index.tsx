@@ -94,7 +94,7 @@ function RoomDisplay(props: RoomDisplayProps) {
     </button>
     <div class="avatar-group -space-x-6 !overflow-visible">
       {Object.keys(props.room.users).map(x =>
-        <div class="tooltip" data-tip={x.split("_")[0]}>
+        <div class="tooltip tooltip-right" data-tip={x.split("_")[0]}>
           <div class="avatar placeholder bg-base-300">
             <div class="w-12">
               <span>{x.charAt(0).toUpperCase()}</span>

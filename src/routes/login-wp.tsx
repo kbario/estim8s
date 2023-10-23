@@ -1,3 +1,4 @@
+import { FirebaseError } from 'firebase/app';
 import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useAuth, useFirebaseApp } from 'solid-firebase';
 import { createEffect, createSignal } from 'solid-js';
@@ -25,7 +26,7 @@ export default function Login() {
     if (validateEmail(email())) {
       isSignIn() === 'sign-in'
         ? signInWithEmailAndPassword(getAuth(app), email(), password())
-          .catch((err) => { pushToast({ type: 'error', message: err }); console.log(err) })
+          .catch((err:FirebaseError) => { pushToast({ type: 'error', message: err.message }); console.log(err) })
         : createUserWithEmailAndPassword(getAuth(app), email(), password())
           .then(() => {
             pushToast({ type: 'success', message: 'your user was created successfully :)' })

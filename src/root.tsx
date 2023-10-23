@@ -30,19 +30,9 @@ const app = initializeApp({
   measurementId: "G-Z9FWG08L99"
 })
 
-const navItems = [
-  { display: 'estim8', url: 'https://estim8.kbar.io/', target: "_blank" },
-]
-
 export default function Root() {
-  const location = useLocation();
-
   const state = useAuth(getAuth(app))
 
-  const active = (path: string) =>
-    path == location.pathname
-      ? "border-sky-600"
-      : "border-transparent group-hover:border-sky-600";
   return (
     <Html lang="en">
       <Head>
@@ -87,7 +77,7 @@ export default function Root() {
                   </li>
                 </ul>
               </nav>
-              <main class="flex flex-col gap-4 p-4 h-[calc(100svh-64px)]">
+              <main class="flex flex-col gap-4 p-4 h-[calc(100svh-64px)] mx-auto">
                 <Routes>
                   <FileRoutes />
                 </Routes>

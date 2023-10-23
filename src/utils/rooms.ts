@@ -3,25 +3,25 @@ import { addDoc, collection, deleteDoc, doc, getDoc, getFirestore, setDoc, updat
 import { useAuth, useFirestore } from "solid-firebase";
 
 export const _labels = [
-  "Communication & Meetings",
+  "Communications & Meetings",
   "Initial Setup",
   "Development",
-  "Revision/Bug-fixes",
+  "Revision/bug-fixes",
   "Writing Tests",
   "Manual Testing",
-  "Merging & Deployment",
+  "Merging & Deployments",
   "Learning Time/Non-project",
   "Confidence Level",
 ]
 
 const labels = [
-  { label: "Communication & Meetings", value: 2, min: 1 },
+  { label: "Communications & Meetings", value: 2, min: 1 },
   { label: "Initial Setup", value: 2, min: 1 },
   { label: "Development", value: 4, min: 1 },
-  { label: "Revision/Bug-fixes", value: 2, min: 1 },
+  { label: "Revision/bug-fixes", value: 2, min: 1 },
   { label: "Writing Tests", value: 2, min: 1 },
   { label: "Manual Testing", value: 2, min: 1 },
-  { label: "Merging & Deployment", value: 2, min: 1 },
+  { label: "Merging & Deployments", value: 2, min: 1 },
   { label: "Learning Time/Non-project", value: 2, min: 1 },
   { label: "Confidence Level", value: 2, min: 1 },
 ]

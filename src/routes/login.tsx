@@ -6,6 +6,7 @@ import { SigInput } from "~/components/input";
 import { pushToast } from '~/components/toast';
 import { EMAIL_FOR_LOGIN } from '~/constants/localStorage';
 import { validateEmail } from '~/utils/emailValidation';
+import { isServer } from 'solid-js/web';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ export default function Login() {
   })
 
   const signIn = () => {
+    if (isServer) return
     if (validateEmail(email())) {
       sendSignInLinkToEmail(getAuth(app), email(), actionCodeSettings)
         .then(() => {
@@ -50,8 +52,8 @@ export default function Login() {
 
 const actionCodeSettings = {
   // URL you want to redirect back to. The domain (www.example.com) for this
-  // URL must be in the authorized domains list in the Firebase Console.
-  url: window.location.href.includes('localhost')
+  // URL must be in the authorized domains liet in the Firebase Console.
+  url: !isServer && window.location.href.includes('localhost')
     ? 'http://localhost:3000/link-login'
     : 'https://estim8s.kbar.io/link-login',
   // This must be true.

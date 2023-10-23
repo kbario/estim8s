@@ -46,6 +46,11 @@ export default function Room() {
   //
   const listSort = ([al]: [string, any], [bl]: [string, any]) => _labels?.indexOf(al) < _labels?.indexOf(bl) ? -1 : 1
 
+  const thisToThat = (scores: { [k: string]: a }) => {
+    return Object.entries(scores).map(([l, v]) => {
+      return { enabled: v.enabled, hours: v.value.toString(), min: v.min, name: l }
+    })
+  }
 
   // const arst = (acc: number, idv: Thing | EnclosedThing) => {
   //   if (isEnclosedThing(idv)) {
@@ -59,7 +64,7 @@ export default function Room() {
   const SEARCH_PARAM_NAME = "D";
   const zxcd = (init: string) => (acc: string, idv: a, idx: number) => {
     acc += idv.enabled
-      ? `${init}- ${_labels[idx]}: ${idv.value}${getPlurality(idv.value)} \n`
+      ? `${init}- ${_labels[idx]}: ${idv.value}${getPlurality(idv.value.toString())} \n`
       : "";
     return acc;
   };
@@ -74,7 +79,7 @@ export default function Room() {
           mySum()?.toString()
         )}**`.toString();
     const jkl = `\n\n[Re-estim8 here](https://estim8.kbar.io/?${SEARCH_PARAM_NAME}=${encodeURIComponent(
-      JSON.stringify(userScores()),
+      JSON.stringify(thisToThat(userScores())),
     )})`;
     const zxcv = Object.values(userScores()).reduce(zxcd(""), "") + qwer + jkl;
     navigator.clipboard.writeText(zxcv);
@@ -89,7 +94,7 @@ export default function Room() {
     if (!thing) return undefined;
     const { ['Confidence Level']: arst, ...rest } = thing
     return Object.values(rest).reduce((acc, idv) => {
-      acc += (idv.enabled ? parseFloat(idv.value) : 0)
+      acc += (idv.enabled ? parseFloat(idv.value.toString()) : 0)
       return acc
     }, 0)
   }
@@ -113,56 +118,74 @@ export default function Room() {
   }) as Accessor<[string, { [k: string]: a }][]>
   //#endregion derived state
 
-  return <div class="flex flex-col gap-4">
-    <h3 class="text-xl ">{room.data?.name}</h3>
-    <div class="flex gap-8">
-      <div class="flex flex-col">
-        {user.data?.displayName}
-        {userScores() && <For each={_labels}>
-          {l => {
-            if (!userScores()[l]) return
-            const mut = JSON.parse(JSON.stringify(userScores()[l]))
-            const trigger = debounce(async () => {
-              user.data &&
-                await _updateUserScores(user.data, db, params.id, l, mut)
-            }, 1000)
-            return <div class="flex h-16 items-center justify-between">
-              <div class="form-control">
-                <label class="label cursor-pointer flex gap-2">
-                  <input
-                    class="checkbox"
-                    type="checkbox"
-                    checked={mut.enabled}
-                    onChange={(e) => { mut.enabled = e.target.checked; trigger() }} />
-                  <span class="label-text">{l}</span>
-                </label>
+  return <div class="flex flex-col gap-4 min-w-fit">
+    <Show when={room.data && !room.loading}
+      fallback={
+        <span class="loading loading-ring loading-lg"></span>
+      }
+    >
+      <h3 class="text-2xl font-bold">{room.data?.name}</h3>
+      <div class="flex gap-8">
+        <div class="flex flex-col">
+          {user.data?.displayName}
+          {userScores() && <For each={_labels}>
+            {l => {
+              if (!userScores()[l]) return
+              const mut = JSON.parse(JSON.stringify(userScores()[l]))
+              const trigger = debounce(async () => {
+                user.data &&
+                  await _updateUserScores(user.data, db, params.id, l, mut)
+              }, 500)
+              return <div class="flex gap-4 h-16 items-center justify-between">
+                <div class="form-control">
+                  <label class="label cursor-pointer flex gap-2">
+                    <input
+                      class="checkbox"
+                      type="checkbox"
+                      checked={mut.enabled}
+                      onChange={(e) => { mut.enabled = e.target.checked; trigger() }} />
+                    <span class="label-text">{l}</span>
+                  </label>
+                </div>
+                <input
+                  class="input text-white input-bordered w-24 input-primary"
+                  placeholder="estim8"
+                  type="number"
+                  disabled={!userScores()[l].enabled}
+                  pattern="\d*"
+                  value={mut.value}
+                  onInput={(e) => { mut.value = parseFloat(e.currentTarget.value); trigger() }}
+                />
               </div>
-              <input
-                class="input text-white input-bordered w-24"
-                placeholder="estim8"
-                type="number"
-                pattern="\d*"
-                value={mut.value}
-                onInput={(e) => { mut.value = parseFloat(e.currentTarget.value); trigger() }}
-              />
-            </div>
+            }}
+          </For>}
+        </div>
+        <For each={otherUserScores()}>
+          {([user, scores], idx) => {
+            const entries = Object.entries(scores)?.sort(listSort)
+            return <OtherUserScores entries={entries} idx={idx()} name={user.split("_")[0]} />
           }}
-        </For>}
+        </For>
       </div>
-      <For each={otherUserScores()}>
-        {([user, scores], idx) => {
-          const entries = Object.entries(scores)?.sort(listSort)
-          return <OtherUserScores entries={entries} idx={idx()} name={user.split("_")[0]} />
-        }}
-      </For>
-    </div>
-    <div>
-      <span>{mySum()}</span>
-      <Show when={myFactor()?.enabled}> * {myFactor()?.value} = {mySumByFactor()}</Show>
-    </div>
+      {!room.loading && room.data && <div class="flex gap-4 items-end">
+        <div class="flex flex-col">
+          total
+          <div class="text-2xl">
+            <Show when={myFactor()?.enabled && !isNaN(myFactor()?.value)}
+              fallback={<div class="font-bold">{mySum()}{getPlurality(mySum()?.toString())}</div>}
+            >
+              <span>{mySum()}</span> * {myFactor()?.value} = <span class="font-bold">
+                {mySumByFactor()}{getPlurality(mySumByFactor()?.toString())}
+              </span>
+            </Show>
+          </div>
+        </div>
+        <button class="btn" onClick={copy}>Copy</button>
+      </div>
+      }
+    </Show>
     <div class="flex flex-col gap-1 items-end absolute right-4 bottom-4">
       <div class="">
-        <button class="btn" onClick={copy}>Copy</button>
       </div>
       <div class="flex gap-1">
         <button onClick={leaveRoom} class="btn">leave room</button>

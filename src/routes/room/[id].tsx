@@ -32,7 +32,7 @@ export default function Room() {
 
   //#region derived state
   createEffect(function leaveIfRoomIsDeletedOrYourUserHasLeft() {
-    if ((!room.data?.leadId || !!user.data && !room.data.users[_makeUserName(user.data)]) && !room.loading) {
+    if ((!room.data?.leadId || !room.data?.users[_makeUserName(user?.data)]) && !room.loading) {
       navigate('/')
     }
   })

@@ -142,7 +142,7 @@ export default function Room() {
       <h3 class="text-2xl font-bold">{room.data?.name}</h3>
       <div class="w-full h-full overflow-auto">
         <div class="flex gap-8 h-max w-full min-w-max">
-          <div class="flex flex-col w-[400px] h-max sticky z-40 bg-base-100 left-0">
+          <div class="flex flex-col h-max sticky z-40 bg-base-100 left-0">
             <div class="bg-base-100 top-0 sticky z-[45]">{user.data?.displayName}</div>
             {userScores() && <For each={userScoresLabels()}>
               {(l, idx) => {

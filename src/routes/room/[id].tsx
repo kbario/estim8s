@@ -88,7 +88,7 @@ export default function Room() {
   const resetEverything = async () => {
     const ruSure = confirm('do you wish to reset the estimates?')
     if (ruSure) {
-    setShowScores(false)
+      setShowScores(false)
       await _reserAllUserScores(db, params.id, setShowScores)
     }
   }
@@ -149,7 +149,7 @@ export default function Room() {
         <div class="flex gap-8 h-max w-full min-w-max">
           <div class="flex flex-col h-max sticky z-40 bg-base-100 left-0">
             <div class="bg-base-100 top-0 sticky z-[45]">{user.data?.displayName}</div>
-            { showScores() && <For each={userScoresLabels()}>
+            {showScores() && <For each={userScoresLabels()}>
               {(l, idx) => {
                 const [mut, setMut] = createSignal<a>({} as a)
                 createEffect(() => {
@@ -220,7 +220,8 @@ export default function Room() {
         <div class="gap-1 md:flex hidden">
           <button class="btn" onClick={copy}>Copy</button>
           <button class="btn" onClick={resetMe}>Reset Me</button>
-          <button class="btn" onClick={resetEverything}>Reset Everything</button>
+          {(room.data?.leadId === user.data?.uid) &&
+            <button class="btn" onClick={resetEverything}>Reset Everything</button>}
         </div>
       </div>
       }
@@ -241,9 +242,9 @@ export default function Room() {
           <li>
             <button class="btn" onClick={resetMe}>Reset Me</button>
           </li>
-          <li>
+          {(room.data?.leadId === user.data?.uid) && <li>
             <button class="btn" onClick={resetEverything}>Reset Everything</button>
-          </li>
+          </li>}
           <li>
             <button onClick={leaveRoom} class="btn">leave room</button>
           </li>

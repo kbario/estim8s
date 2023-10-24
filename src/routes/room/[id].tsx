@@ -220,8 +220,8 @@ export default function Room() {
         <div class="gap-1 md:flex hidden">
           <button class="btn" onClick={copy}>Copy</button>
           <button class="btn" onClick={resetMe}>Reset Me</button>
-          {(room.data?.leadId === user.data?.uid) &&
-            <button class="btn" onClick={resetEverything}>Reset Everything</button>}
+          {/* {(room.data?.leadId === user.data?.uid) && */}
+          {/*   <button class="btn" onClick={resetEverything}>Reset Everything</button>} */}
         </div>
       </div>
       }

@@ -4,8 +4,7 @@ import { doc, getFirestore } from "firebase/firestore";
 import { useAuth, useFirebaseApp, useFirestore } from "solid-firebase";
 import { Accessor, createEffect, createMemo, createSignal, For, Show } from "solid-js";
 import { useNavigate, useParams } from "solid-start";
-import { Input } from "~/components/input";
-import { a, _deleteRoom, _labels, _leaveRoom, _makeUserName, _reserAllUserScores, _reserScore, _reserUserScores, _updateUserScores } from "~/utils/rooms";
+import { a, _deleteRoom, _labels, _leaveRoom, _makeUserName, _reserAllUserScores, _reserUserScores, _updateUserScores } from "~/utils/rooms";
 
 export default function Room() {
   //#region solid
@@ -19,6 +18,8 @@ export default function Room() {
   const auth = getAuth(app)
   const user = useAuth(auth)
   const room = useFirestore(doc(db, 'rooms', params.id))
+
+  const [showScores, setShowScores] = createSignal(true)
 
   const leaveRoom = async () => {
     user.data && await _leaveRoom(user.data, db, params.id)
@@ -87,14 +88,16 @@ export default function Room() {
   const resetEverything = async () => {
     const ruSure = confirm('do you wish to reset the estimates?')
     if (ruSure) {
-      await _reserAllUserScores(db, params.id)
+    setShowScores(false)
+      await _reserAllUserScores(db, params.id, setShowScores)
     }
   }
 
   const resetMe = async () => {
     const ruSure = confirm('do you wish to reset the estimates?')
+    setShowScores(false)
     if (ruSure && user.data) {
-      await _reserUserScores(db, params.id, user.data)
+      await _reserUserScores(db, params.id, user.data, setShowScores)
     }
   }
 
@@ -113,9 +116,11 @@ export default function Room() {
     }, 0)
   }
 
+  const makeLabels = (a: any) => _labels.map(l => a?.[l])
+
   // const sumByFactor = () => factor()?.enabled ? factor()?.value * sum() : sum()
   const userScores = createMemo((): { [k: string]: a } => user.data?.uid ? room.data?.users[_makeUserName(user.data)] : {})
-  const userScoresLabels = createMemo(() => _labels.map(l => userScores()?.[l]))
+  const userScoresLabels = createMemo(() => makeLabels(userScores()))
   // const userScores = createMemo((): [string, a][] =>
   //   !user.loading && !room.loading && user.data?.uid && room.data?.leadId && room.data?.users[_makeUserName(user.data)]
   //     ? Object.entries()
@@ -144,17 +149,21 @@ export default function Room() {
         <div class="flex gap-8 h-max w-full min-w-max">
           <div class="flex flex-col h-max sticky z-40 bg-base-100 left-0">
             <div class="bg-base-100 top-0 sticky z-[45]">{user.data?.displayName}</div>
-            {userScores() && <For each={userScoresLabels()}>
+            { showScores() && <For each={userScoresLabels()}>
               {(l, idx) => {
                 const [mut, setMut] = createSignal<a>({} as a)
-                createEffect(() => setMut(l))
+                createEffect(() => {
+                  setMut(l)
+                })
                 const setMutEnabled = (enabled: boolean) => {
                   const q = JSON.parse(JSON.stringify(mut()))
+                  q.updated = true
                   q.enabled = enabled
                   setMut(q)
                 }
                 const setMutValue = (value: number) => {
                   const q = JSON.parse(JSON.stringify(mut()))
+                  q.updated = true
                   q.value = value
                   setMut(q)
                 }
@@ -168,19 +177,19 @@ export default function Room() {
                       <input
                         class="checkbox"
                         type="checkbox"
-                        checked={mut().enabled}
+                        checked={mut()?.enabled}
                         onChange={(e) => { setMutEnabled(e.target.checked); trigger() }} />
                       <span class="label-text">{_labels[idx()]}</span>
                     </label>
                   </div>
                   <input
                     class="input text-white input-bordered w-24"
-                    classList={{ 'input-primary': mut().updated }}
+                    classList={{ 'input-primary': mut()?.updated }}
                     placeholder="estim8"
                     type="number"
-                    disabled={!mut().enabled}
+                    disabled={!mut()?.enabled}
                     pattern="\d*"
-                    value={mut().value}
+                    value={mut()?.value}
                     onInput={(e) => { setMutValue(parseFloat(e.currentTarget.value)); trigger() }}
                   />
                 </div>
@@ -223,7 +232,7 @@ export default function Room() {
     <div class="flex md:hidden absolute bottom-4 right-4  items-end w-full justify-end">
       <details class="dropdown dropdown-top dropdown-end z-[60]">
         <summary class="btn">
-            <svg class="swap-off fill-current" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 512 512"><path d="M64,384H448V341.33H64Zm0-106.67H448V234.67H64ZM64,128v42.67H448V128Z" /></svg>
+          <svg class="swap-off fill-current" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 512 512"><path d="M64,384H448V341.33H64Zm0-106.67H448V234.67H64ZM64,128v42.67H448V128Z" /></svg>
         </summary>
         <ul class="p-2 shadow menu dropdown-content z-[1] bg-base-100 rounded-box w-52">
           <li>

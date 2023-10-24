@@ -120,6 +120,7 @@ export const _addUserToRoom = async (
 export const _reserAllUserScores = async (
   db: ReturnType<typeof getFirestore>,
   roomId: string,
+  sett: (a: boolean) => void
 ) => {
   const doco = await getDoc(doc(db, 'rooms', roomId));
   const docoData = doco.data()
@@ -129,18 +130,21 @@ export const _reserAllUserScores = async (
       return acc
     }, {} as { [l: string]: { [k: string]: a } })
     await updateDoc(doc(db, 'rooms', roomId), docoData)
+    sett(true)
   }
 }
 export const _reserUserScores = async (
   db: ReturnType<typeof getFirestore>,
   roomId: string,
   user: User,
+  sett: (a: boolean) => void
 ) => {
   const doco = await getDoc(doc(db, 'rooms', roomId));
   const docoData = doco.data()
   if (!!docoData) {
     docoData.users[_makeUserName(user)] = defaults()
     await updateDoc(doc(db, 'rooms', roomId), docoData)
+    sett(true)
   }
 }
 

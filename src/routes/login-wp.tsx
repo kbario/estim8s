@@ -35,7 +35,7 @@ export default function Login() {
             // .then(() => pushToast({ type: 'success', message: 'display name updated' }))
             // .catch((error) => { pushToast({ type: 'error', message: 'could not update display name' }); console.log(error) })
           })
-          .catch((err) => { pushToast({ type: 'error', message: err }); console.log(err) })
+          .catch((err) => { pushToast({ type: 'error', message: err.message }); console.log(err) })
     }
   }
 

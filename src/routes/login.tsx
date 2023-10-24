@@ -29,7 +29,7 @@ export default function Login() {
           pushToast({ type: 'success', message: 'Login email sent successfully. Check your spam :)' })
         })
         .catch((err) => {
-          pushToast({ type: 'error', message: err })
+          pushToast({ type: 'error', message: err.message })
           console.log(err)
         })
     } else if (email() === '') {

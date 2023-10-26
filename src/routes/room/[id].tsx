@@ -186,11 +186,12 @@ export default function Room() {
                     class="input text-white input-bordered w-24"
                     classList={{ 'input-primary': mut()?.updated }}
                     placeholder="estim8"
-                    type="number"
                     disabled={!mut()?.enabled}
-                    pattern="\d*"
+                    step={mut()?.step}
+                    inputmode="decimal"
+                    type="number"
                     value={mut()?.value}
-                    onInput={(e) => { setMutValue(parseFloat(e.currentTarget.value)); trigger() }}
+                    onInput={(e) => { setMutValue(e.target.value); trigger() }}
                   />
                 </div>
               }}

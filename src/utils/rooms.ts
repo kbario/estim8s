@@ -15,15 +15,15 @@ export const _labels = [
 ]
 
 const labels = [
-  { label: "Communications & Meetings", value: 1, min: 1 },
-  { label: "Initial Setup", value: 1, min: 1 },
-  { label: "Development", value: 4, min: 1 },
-  { label: "Revision/bug-fixes", value: 2, min: 1 },
-  { label: "Writing Tests", value: 2, min: 1 },
-  { label: "Manual Testing", value: 1, min: 1 },
-  { label: "Merging & Deployments", value: 0.5, min: 1 },
-  { label: "Learning Time/Non-project", value: 1, min: 1 },
-  { label: "Confidence Level", value: 1.1, min: 1 },
+  { label: "Communications & Meetings", value: 1, min: 1, step: 1 },
+  { label: "Initial Setup", value: 1, min: 1, step: 1 },
+  { label: "Development", value: 4, min: 1, step: 1 },
+  { label: "Revision/bug-fixes", value: 2, min: 1, step: 1 },
+  { label: "Writing Tests", value: 2, min: 1, step: 1 },
+  { label: "Manual Testing", value: 1, min: 1, step: 1 },
+  { label: "Merging & Deployments", value: 0.5, min: 1, step: 0.5 },
+  { label: "Learning Time/Non-project", value: 1, min: 1, step: 1 },
+  { label: "Confidence Level", value: 1.1, min: 1, step: 0.1 },
 ]
 
 export const _leaveRoom = async (
@@ -68,11 +68,11 @@ export const _deleteRoom = async (
 //     value,
 //   }
 // }
-export type a = { enabled: boolean, value: number, min: number, updated: boolean }
+export type a = { enabled: boolean, value: number, min: number, step: number, updated: boolean }
 
 function defaults() {
   return labels.reduce((acc, idv) => {
-    acc[idv.label] = { enabled: true, value: idv.value, min: idv.min, updated: false }
+    acc[idv.label] = { enabled: true, value: idv.value, min: idv.min, step: idv.step, updated: false }
     return acc
   }, {} as { [k: string]: a })
 }

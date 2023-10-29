@@ -1,5 +1,5 @@
 import { debounce } from "@solid-primitives/scheduled";
-import { getAuth } from "firebase/auth";
+import { getAuth, User } from "firebase/auth";
 import { doc, getFirestore } from "firebase/firestore";
 import { useAuth, useFirebaseApp, useFirestore } from "solid-firebase";
 import { Accessor, createEffect, createMemo, createSignal, For, Show } from "solid-js";
@@ -81,7 +81,7 @@ export default function Room() {
     const jkl = `\n\n[Re-estim8 here](https://estim8.kbar.io/?${SEARCH_PARAM_NAME}=${encodeURIComponent(
       JSON.stringify(thisToThat(userScores())),
     )})`;
-    const zxcv = Object.values(userScoresLabels()).reduce(zxcd(""), "") + qwer + jkl;
+    const zxcv = Object.values(userScoresLabels()).reduce(zxcd(""), "") + qwer; //+ jkl;
     navigator.clipboard.writeText(zxcv);
   }
 
@@ -108,7 +108,7 @@ export default function Room() {
   }
 
   const sum = (thing: { [k: string]: a }) => {
-    if (!thing) return undefined;
+    if (!thing) return 0;
     const { ['Confidence Level']: arst, ...rest } = thing
     return Object.values(rest).reduce((acc, idv) => {
       acc += (idv.enabled ? parseFloat(idv.value.toString()) : 0)
@@ -128,7 +128,7 @@ export default function Room() {
   //     : []) as Accessor<[string, a][]>
   const mySum = createMemo(() => sum(userScores()))
   const myFactor = createMemo(() => factor(userScores()))
-  const mySumByFactor = createMemo(() => myFactor()?.enabled ? Math.ceil(parseFloat((mySum() || 0)) * parseFloat((myFactor()?.value || 1))) : mySum())
+  const mySumByFactor = createMemo(() => myFactor()?.enabled ? Math.ceil((mySum()) * parseFloat((myFactor()?.value || '1'))) : mySum())
   const otherUserScores = createMemo(() => {
     if (!!user.data?.uid && room.data?.users) {
       const { [_makeUserName(user.data)]: omitted, ...others } = room.data.users
@@ -147,55 +147,11 @@ export default function Room() {
       <h3 class="text-2xl font-bold">{room.data?.name}</h3>
       <div class="w-full h-full overflow-auto">
         <div class="flex gap-8 h-max w-full min-w-max">
-          <div class="flex flex-col h-max sticky z-40 bg-base-100 left-0">
+          <div class="flex flex-col h-max sticky z-4'0 bg-base-100 left-0">
             <div class="bg-base-100 top-0 sticky z-[45]">{user.data?.displayName}</div>
-            {showScores() && <For each={userScoresLabels()}>
-              {(l, idx) => {
-                const [mut, setMut] = createSignal<a>({} as a)
-                createEffect(() => {
-                  setMut(l)
-                })
-                const setMutEnabled = (enabled: boolean) => {
-                  const q = JSON.parse(JSON.stringify(mut()))
-                  q.updated = true
-                  q.enabled = enabled
-                  setMut(q)
-                }
-                const setMutValue = (value: number) => {
-                  const q = JSON.parse(JSON.stringify(mut()))
-                  q.updated = true
-                  q.value = value
-                  setMut(q)
-                }
-                const trigger = debounce(async () => {
-                  user.data &&
-                    await _updateUserScores(user.data, db, params.id, _labels[idx()], mut())
-                }, 500)
-                return <div class="flex gap-4 h-16 items-center justify-between">
-                  <div class="form-control sticky bg-base-100 left-0">
-                    <label class="label cursor-pointer flex gap-2">
-                      <input
-                        class="checkbox"
-                        type="checkbox"
-                        checked={mut()?.enabled}
-                        onChange={(e) => { setMutEnabled(e.target.checked); trigger() }} />
-                      <span class="label-text">{_labels[idx()]}</span>
-                    </label>
-                  </div>
-                  <input
-                    class="input text-white input-bordered w-24"
-                    classList={{ 'input-primary': mut()?.updated }}
-                    placeholder="estim8"
-                    disabled={!mut()?.enabled}
-                    step={mut()?.step}
-                    inputmode="decimal"
-                    type="number"
-                    value={mut()?.value}
-                    onInput={(e) => { setMutValue(e.target.value); trigger() }}
-                  />
-                </div>
-              }}
-            </For>}
+            <For each={userScoresLabels()}>
+              {(l, idx) => <Asdf l={l} user={user.data} db={db} id={params.id} idx={idx()} showscores={showScores()}></Asdf>}
+            </For>
           </div>
           <For each={otherUserScores()}>
             {([user, scores], idx) => {
@@ -209,7 +165,7 @@ export default function Room() {
         <div class="flex flex-col">
           total
           <div class="text-2xl">
-            <Show when={myFactor()?.enabled && !isNaN(myFactor()?.value)}
+            <Show when={myFactor()?.enabled && !isNaN(parseFloat(myFactor()?.value || '0')) && myFactor()?.value}
               fallback={<div class="font-bold">{mySum()}{getPlurality(mySum()?.toString())}</div>}
             >
               <span>{mySum()}</span> * {myFactor()?.value} = <span class="font-bold">
@@ -243,9 +199,9 @@ export default function Room() {
           <li>
             <button class="btn" onClick={resetMe}>Reset Me</button>
           </li>
-          {(room.data?.leadId === user.data?.uid) && <li>
-            <button class="btn" onClick={resetEverything}>Reset Everything</button>
-          </li>}
+          {/* {(room.data?.leadId === user.data?.uid) && <li> */}
+          {/*   <button class="btn" onClick={resetEverything}>Reset Everything</button> */}
+          {/* </li>} */}
           <li>
             <button onClick={leaveRoom} class="btn">leave room</button>
           </li>
@@ -261,26 +217,26 @@ export default function Room() {
 const OtherUserScores = (props: { entries: [string, a][], idx: number, name: string }) => {
   const classes = [
     // { main: 'bg-primary text-primary-content', updated: 'bg-primary-focus text-primary-focus-content', second: 'bg-primary-content text-primary' },
-    { main: 'bg-secondary text-secondary-content opacity-50', updated: 'bg-secondary-focus text-secondary-content', second: 'bg-secondary-content text-secondary' },
-    { main: 'bg-accent text-accent-content opacity-50', updated: 'bg-accent-focus text-accent-content', second: 'bg-accent-content text-accent' },
-    { main: 'bg-info text-info-content opacity-50', updated: 'bg-info-focus text-info-content', second: 'bg-info-content text-info' },
-    { main: 'bg-success text-success-content opacity-50', updated: 'bg-success-focus text-success-content', second: 'bg-success-content text-success' },
-    { main: 'bg-warning text-warning-content opacity-50', updated: 'bg-warning-focus text-warning-content', second: 'bg-warning-content text-warning' },
-    { main: 'bg-error text-error-content opacity-50', updated: 'bg-error-focus text-error-content', second: 'bg-error-content text-error' },
-    { main: 'bg-primary text-primary-content opacity-50', updated: 'bg-primary-focus text-primary-content', second: 'bg-primary-content text-primary' },
-    { main: 'bg-secondary text-secondary-content opacity-50', updated: 'bg-secondary-focus text-secondary-content', second: 'bg-secondary-content text-secondary' },
-    { main: 'bg-accent text-accent-content opacity-50', updated: 'bg-accent-focus text-accent-content', second: 'bg-accent-content text-accent' },
-    { main: 'bg-info text-info-content opacity-50', updated: 'bg-info-focus text-info-content', second: 'bg-info-content text-info' },
-    { main: 'bg-success text-success-content opacity-50', updated: 'bg-success-focus text-success-content', second: 'bg-success-content text-success' },
-    { main: 'bg-warning text-warning-content opacity-50', updated: 'bg-warning-focus text-warning-content', second: 'bg-warning-content text-warning' },
-    { main: 'bg-error text-error-content opacity-50', updated: 'bg-error-focus text-error-content', second: 'bg-error-content text-error' },
-    { main: 'bg-primary text-primary-content opacity-50', updated: 'bg-primary-focus text-primary-content', second: 'bg-primary-content text-primary' },
-    { main: 'bg-secondary text-secondary-content opacity-50', updated: 'bg-secondary-focus text-secondary-content', second: 'bg-secondary-content text-secondary' },
-    { main: 'bg-accent text-accent-content opacity-50', updated: 'bg-accent-focus text-accent-content', second: 'bg-accent-content text-accent' },
-    { main: 'bg-info text-info-content opacity-50', updated: 'bg-info-focus text-info-content', second: 'bg-info-content text-info' },
-    { main: 'bg-success text-success-content opacity-50', updated: 'bg-success-focus text-success-content', second: 'bg-success-content text-success' },
-    { main: 'bg-warning text-warning-content opacity-50', updated: 'bg-warning-focus text-warning-content', second: 'bg-warning-content text-warning' },
-    { main: 'bg-error text-error-content opacity-50', updated: 'bg-error-focus text-error-content', second: 'bg-error-content text-error' },
+    { main: 'bg-secondary text-secondary-content opacity-60', updated: 'bg-secondary-focus text-secondary-content', second: 'bg-secondary-content text-secondary' },
+    { main: 'bg-accent text-accent-content opacity-60', updated: 'bg-accent-focus text-accent-content', second: 'bg-accent-content text-accent' },
+    { main: 'bg-info text-info-content opacity-60', updated: 'bg-info-focus text-info-content', second: 'bg-info-content text-info' },
+    { main: 'bg-success text-success-content opacity-60', updated: 'bg-success-focus text-success-content', second: 'bg-success-content text-success' },
+    { main: 'bg-warning text-warning-content opacity-60', updated: 'bg-warning-focus text-warning-content', second: 'bg-warning-content text-warning' },
+    { main: 'bg-error text-error-content opacity-60', updated: 'bg-error-focus text-error-content', second: 'bg-error-content text-error' },
+    { main: 'bg-primary text-primary-content opacity-60', updated: 'bg-primary-focus text-primary-content', second: 'bg-primary-content text-primary' },
+    { main: 'bg-secondary text-secondary-content opacity-60', updated: 'bg-secondary-focus text-secondary-content', second: 'bg-secondary-content text-secondary' },
+    { main: 'bg-accent text-accent-content opacity-60', updated: 'bg-accent-focus text-accent-content', second: 'bg-accent-content text-accent' },
+    { main: 'bg-info text-info-content opacity-60', updated: 'bg-info-focus text-info-content', second: 'bg-info-content text-info' },
+    { main: 'bg-success text-success-content opacity-60', updated: 'bg-success-focus text-success-content', second: 'bg-success-content text-success' },
+    { main: 'bg-warning text-warning-content opacity-60', updated: 'bg-warning-focus text-warning-content', second: 'bg-warning-content text-warning' },
+    { main: 'bg-error text-error-content opacity-60', updated: 'bg-error-focus text-error-content', second: 'bg-error-content text-error' },
+    { main: 'bg-primary text-primary-content opacity-60', updated: 'bg-primary-focus text-primary-content', second: 'bg-primary-content text-primary' },
+    { main: 'bg-secondary text-secondary-content opacity-60', updated: 'bg-secondary-focus text-secondary-content', second: 'bg-secondary-content text-secondary' },
+    { main: 'bg-accent text-accent-content opacity-60', updated: 'bg-accent-focus text-accent-content', second: 'bg-accent-content text-accent' },
+    { main: 'bg-info text-info-content opacity-60', updated: 'bg-info-focus text-info-content', second: 'bg-info-content text-info' },
+    { main: 'bg-success text-success-content opacity-60', updated: 'bg-success-focus text-success-content', second: 'bg-success-content text-success' },
+    { main: 'bg-warning text-warning-content opacity-60', updated: 'bg-warning-focus text-warning-content', second: 'bg-warning-content text-warning' },
+    { main: 'bg-error text-error-content opacity-60', updated: 'bg-error-focus text-error-content', second: 'bg-error-content text-error' },
   ]
   return <div class="flex flex-col items-center h-max">
     <div class="sticky top-0 bg-base-100 z-20 w-full text-center">{props.name}</div>
@@ -297,5 +253,48 @@ const OtherUserScores = (props: { entries: [string, a][], idx: number, name: str
         </div>
       </div>
     }</For>
+  </div>
+}
+
+const Asdf = (props: { user: User | null, db, l, id: string, idx: number, showscores: boolean }) => {
+  const [mut, setMut] = createSignal<a>({} as a)
+
+  createEffect(function updatedInputsOnReset() {
+    (() => props.showscores)()
+    setMut(props.l)
+  })
+
+  const setMutEnabled = (enabled: boolean) => {
+    setMut({ ...mut(), updated: true, enabled })
+  }
+  const setMutValue = (value: string) => {
+    setMut({ ...mut(), updated: true, value })
+  }
+  const trigger = debounce(async () => {
+    props.user &&
+      await _updateUserScores(props.user, props.db, props.id, _labels[props.idx], mut())
+  }, 500)
+  return <div class="flex gap-4 h-16 items-center justify-between">
+    <div class="form-control sticky bg-base-100 left-0">
+      <label class="label cursor-pointer flex gap-2">
+        <input
+          class="checkbox"
+          type="checkbox"
+          checked={mut()?.enabled}
+          onChange={(e) => { setMutEnabled(e.target.checked); trigger() }} />
+        <span class="label-text">{_labels[props.idx]}</span>
+      </label>
+    </div>
+    <input
+      class="input text-white input-bordered w-24"
+      classList={{ 'input-primary': mut()?.updated }}
+      placeholder="estim8"
+      disabled={!mut()?.enabled}
+      step={mut()?.step}
+      inputmode="decimal"
+      type="number"
+      value={mut()?.value}
+      onInput={(e) => { setMutValue(e.currentTarget.value); trigger() }}
+    />
   </div>
 }
